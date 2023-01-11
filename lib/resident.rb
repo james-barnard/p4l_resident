@@ -18,8 +18,6 @@ class Resident
     #p "save!: lat: #{latitude}, long: #{longitude}"
     unless persisted?
       self.geohash = GeoHash.encode(latitude.to_f, longitude.to_f, 6)
-      #p "save!: geohash: #{geohash}"
-      #p "save!: resident.id: #{self.id}"
       #p "save!: resident.geohash: #{self.geohash}"
     end
     super

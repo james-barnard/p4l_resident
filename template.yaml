@@ -13,6 +13,8 @@ Parameters:
     Type: String
   ResidentTableName:
     Type: String
+  ResidentLogTableName:
+    Type: String
   GeoCodioAPIKey:
     Type: String
   AwsExecutionEnv:
@@ -30,6 +32,7 @@ Globals:
         PRAYER_LIST_NAMES_BUCKET:  !Ref PrayerListNamesBucket
         PRAYER_LIST_LOADED_BUCKET: !Ref PrayerListLoadedBucket
         RESIDENT_TABLE_NAME:       !Ref ResidentTableName
+        RESIDENT_LOG_TABLE_NAME:   !Ref ResidentLogTableName
         AWS_EXECUTION_ENV:         !Ref AwsExecutionEnv
         GEOCODIO_API_KEY:          !Ref GeoCodioAPIKey
 
@@ -46,8 +49,10 @@ Resources:
             BucketName: !Ref PrayerListLoadedBucket
         - DynamoDBCrudPolicy:
             TableName: !Ref ResidentTableName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ResidentLogTableName
 
-  DynamoDBTable:
+  ResidentTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Ref ResidentTableName
@@ -60,6 +65,24 @@ Resources:
         - AttributeName: geohash
           KeyType: HASH
         - AttributeName: id
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  ResidentLogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref ResidentLogTableName
+      AttributeDefinitions:
+        - AttributeName: file_name
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: file_name
+          KeyType: HASH
+        - AttributeName: timestamp
           KeyType: RANGE
       ProvisionedThroughput:
         ReadCapacityUnits: 5
