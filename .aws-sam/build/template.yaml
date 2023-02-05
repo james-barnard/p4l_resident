@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'p4l-resident
+
+  '
+Parameters:
+  S3Region:
+    Type: String
+    Default: us-east-1
+  PrayerListNamesBucket:
+    Type: String
+  PrayerListLoadedBucket:
+    Type: String
+  ResidentTableName:
+    Type: String
+  ResidentLogTableName:
+    Type: String
+  GeoCodioAPIKey:
+    Type: String
+  AwsExecutionEnv:
+    Type: String
+    Default: prod
+Globals:
+  Function:
+    Runtime: ruby2.7
+    Timeout: 900
+    MemorySize: 512
+    Environment:
+      Variables:
+        S3_REGION:
+          Ref: S3Region
+        PRAYER_LIST_NAMES_BUCKET:
+          Ref: PrayerListNamesBucket
+        PRAYER_LIST_LOADED_BUCKET:
+          Ref: PrayerListLoadedBucket
+        RESIDENT_TABLE_NAME:
+          Ref: ResidentTableName
+        RESIDENT_LOG_TABLE_NAME:
+          Ref: ResidentLogTableName
+        AWS_EXECUTION_ENV:
+          Ref: AwsExecutionEnv
+        GEOCODIO_API_KEY:
+          Ref: GeoCodioAPIKey
+Resources:
+  RunRules:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda.run_rules
+      Policies:
+      - S3FullAccessPolicy:
+          BucketName:
+            Ref: PrayerListNamesBucket
+      - S3FullAccessPolicy:
+          BucketName:
+            Ref: PrayerListLoadedBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ResidentTableName
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ResidentLogTableName
+      CodeUri: RunRules
+    Metadata:
+      SamResourceId: RunRules
+  UserResidentTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Ref: ResidentTableName
+      AttributeDefinitions:
+      - AttributeName: user_id
+        AttributeType: S
+      - AttributeName: match_key
+        AttributeType: S
+      KeySchema:
+      - AttributeName: user_id
+        KeyType: HASH
+      - AttributeName: match_key
+        KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+  ResidentLogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Ref: ResidentLogTableName
+      AttributeDefinitions:
+      - AttributeName: file_name
+        AttributeType: S
+      - AttributeName: timestamp
+        AttributeType: N
+      KeySchema:
+      - AttributeName: file_name
+        KeyType: HASH
+      - AttributeName: timestamp
+        KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+Outputs:
+  RunRules:
+    Description: Lambda function for running the prayer list processing rules.
+    Value:
+      Fn::GetAtt:
+      - RunRules
+      - Arn
+  S3Region:
+    Description: The AWS region of the output bucket.
+    Value:
+      Fn::Sub: ${S3Region}
+  PrayerListNamesBucket:
+    Description: Input bucket for prayer list loader files.
+    Value:
+      Fn::Sub: ${PrayerListNamesBucket}
+  PrayerListLoadedBucket:
+    Description: Output bucket for loaded prayer list loader files.
+    Value:
+      Fn::Sub: ${PrayerListLoadedBucket}
+  PrayerListResidentTableName:
+    Description: DDB table for Residents.
+    Value:
+      Ref: ResidentTableName
