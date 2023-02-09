@@ -60,7 +60,7 @@ class NameLoader < Rule
 
   def file_name_components filename
     filename =~ /t(\d.*)-(\d.*)-u(.*)-d(.*)\.pdf/
-    [geocodio.reverse_geocode(["#{$1},-#{$2}"]).best.city, $3]
+    [geocodio.reverse_geocode(["#{$1},-#{$2}"]).best.city, "#{$3}@#{$4}"]
   end
 
   def s3_resource
@@ -129,17 +129,13 @@ class NameLoader < Rule
     tokenize(name) + tokenize(address)
   end
 
-  def format_user_id(user_id)
-    user_id.sub /-d/, "@"
-  end
-
   def  load_resident(line)
     name, addr = line.split '|'
     address = geocode addr
     unless address.nil?
       begin
         resident = Resident.new(
-          user_id:   format_user_id(@user_id),
+          user_id:   @user_id,
           match_key: matchkey(name, addr),
           name:      name,
           address:   addr,
@@ -182,8 +178,6 @@ class NameLoader < Rule
 
     unless @error_occurred
       data_file.records.each do |record|
-        next if @loaded_count > 1
-        next if @failed_count > 1
         load_resident record
       end
 
